@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adviser Merge Sheet</title>
+<style>
+  :root {
+    --bg: #E8F0F8;
+    --bg-2: #F5F9FC;
+    --surface: #FFFFFF;
+    --surface-soft: #F1F6FB;
+    --ink: #1F2E42;
+    --ink-soft: #5C7089;
+    --ink-faint: #8A9CB3;
+    --primary: #3E6E9E;
+    --primary-dark: #2E567F;
+    --border: #D7E3EF;
+    --success: #3F8A6C;
+    --warning: #A8752F;
+    --error: #B3453D;
+    --accent-1: #3E6E9E;
+    --accent-2: #6499C4;
+    --accent-3: #93BEDB;
+    --shadow: 0 8px 24px rgba(46, 86, 127, 0.10);
+    --radius: 14px;
+    --radius-sm: 8px;
+    --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --font-mono: ui-monospace, "SFMono-Regular", "Cascadia Mono", Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 340px, var(--bg-2) 100%);
+    color: var(--ink);
+    font-family: var(--font-ui);
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+  }
+
+  .page { max-width: 720px; margin: 0 auto; padding: 40px 20px 80px; }
+
+  .hero { margin-bottom: 32px; }
+  .glyph { display: flex; align-items: center; gap: 4px; height: 20px; margin-bottom: 14px; }
+  .glyph__bar { display: block; height: 3px; border-radius: 2px; }
+  .glyph__bar--1 { width: 22px; background: var(--accent-1); }
+  .glyph__bar--2 { width: 22px; background: var(--accent-2); }
+  .glyph__bar--3 { width: 22px; background: var(--accent-3); }
+  .glyph__bar--merged { width: 34px; background: var(--primary-dark); margin-left: 6px; }
+
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; margin: 0 0 8px; color: var(--ink); }
+  .hero__desc { margin: 0; color: var(--ink-soft); font-size: 15px; line-height: 1.5; max-width: 52ch; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; margin-bottom: 20px; box-shadow: var(--shadow); }
+  .step-label { font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--primary); font-weight: 600; margin-bottom: 10px; }
+  .card__title { font-size: 17px; font-weight: 600; margin: 0 0 6px; color: var(--ink); }
+  .section-note { font-size: 13px; color: var(--ink-soft); margin: 0 0 16px; line-height: 1.4; }
+
+  .field-label { display: block; font-size: 13px; font-weight: 600; color: var(--ink-soft); margin-bottom: 8px; }
+  .text-input {
+    width: 100%; padding: 12px 14px; font-size: 15px;
+    border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+    background: var(--surface-soft); color: var(--ink); font-family: var(--font-ui);
+    transition: border-color .15s ease, background .15s ease;
+  }
+  .text-input:focus { outline: none; border-color: var(--primary); background: var(--surface); }
+  .text-input:focus-visible { box-shadow: 0 0 0 3px rgba(62,110,158,0.18); }
+
+  .uploads { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  @media (max-width: 640px) { .uploads { grid-template-columns: 1fr; } }
+
+  .upload__label { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+  .upload__label::before {
+    content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    margin-right: 7px; vertical-align: middle;
+  }
+  .upload[data-accent="1"] .upload__label::before { background: var(--accent-1); }
+  .upload[data-accent="2"] .upload__label::before { background: var(--accent-2); }
+  .upload[data-accent="3"] .upload__label::before { background: var(--accent-3); }
+
+  .upload__zone {
+    position: relative; border: 1.5px dashed var(--border); border-radius: var(--radius-sm);
+    background: var(--surface-soft); padding: 18px 12px; text-align: center; cursor: pointer;
+    transition: border-color .15s ease, background .15s ease;
+    min-height: 92px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+  }
+  .upload__zone:hover, .upload__zone.is-dragover { border-color: var(--primary); background: #EAF2FA; }
+  .upload__zone:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(62,110,158,0.18); border-color: var(--primary); }
+  .upload__input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; }
+  .upload__hint { font-size: 13px; color: var(--ink-faint); }
+  .upload__status { font-size: 12.5px; color: var(--ink-soft); font-family: var(--font-mono); word-break: break-word; }
+  .upload__status.is-ready { color: var(--success); }
+  .upload__status.is-error { color: var(--error); }
+
+  .status-line { font-size: 14px; color: var(--ink-soft); margin: 0 0 16px; font-family: var(--font-mono); }
+  .status-line.is-warning { color: var(--warning); }
+
+  .actions { display: flex; flex-direction: column; gap: 10px; }
+
+  .btn {
+    appearance: none; border: none; border-radius: var(--radius-sm); padding: 13px 20px;
+    font-size: 14.5px; font-weight: 600; cursor: pointer; font-family: var(--font-ui);
+    transition: background .15s ease, transform .05s ease;
+  }
+  .btn:active { transform: scale(0.99); }
+  .btn:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(62,110,158,0.28); }
+  .btn--primary { background: var(--primary); color: #fff; }
+  .btn--primary:hover { background: var(--primary-dark); }
+  .btn--primary:disabled { background: #B7C7D9; cursor: not-allowed; }
+  .btn--ghost { background: transparent; color: var(--ink-soft); border: 1.5px solid var(--border); }
+  .btn--ghost:hover { border-color: var(--primary); color: var(--primary); }
+
+  .start-over-wrap { display: flex; justify-content: center; margin-top: 12px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+
+  .glyph.is-processing .glyph__bar--1,
+  .glyph.is-processing .glyph__bar--2,
+  .glyph.is-processing .glyph__bar--3 { animation: slide-in 0.9s ease-in-out infinite alternate; }
+  @keyframes slide-in { from { transform: translateX(0); } to { transform: translateX(6px); } }
+</style>
+</head>
+<body>
+  <div class="page">
+    <header class="hero">
+      <div class="glyph" aria-hidden="true">
+        <span class="glyph__bar glyph__bar--1"></span>
+        <span class="glyph__bar glyph__bar--2"></span>
+        <span class="glyph__bar glyph__bar--3"></span>
+        <span class="glyph__bar glyph__bar--merged"></span>
+      </div>
+      <h1>Adviser Merge Sheet</h1>
+      <p class="hero__desc">Combine Main Stats, Gross Calls and Meaningful Calls into one sheet, then generate an anonymised copy for every adviser.</p>
+    </header>
+
+    <section class="card">
+      <div class="step-label">Step 1</div>
+      <label class="field-label" for="prefixInput">Output file name</label>
+      <input class="text-input" id="prefixInput" type="text" placeholder="e.g. July 2026" autocomplete="off">
+    </section>
+
+    <section class="card">
+      <div class="step-label">Step 2</div>
+      <h2 class="card__title">Upload the three sheets</h2>
+      <p class="section-note">Names are matched automatically across sheets — case differences, initials, and common nicknames (like David/Dave) are treated as the same person.</p>
+      <div class="uploads">
+        <div class="upload" data-key="main" data-accent="1">
+          <div class="upload__label">Main Stats</div>
+          <div class="upload__zone" tabindex="0" role="button" aria-label="Upload Main Stats file">
+            <input type="file" class="upload__input" accept=".xlsx,.xls,.csv">
+            <div class="upload__hint">Drop file or tap to browse</div>
+            <div class="upload__status" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="upload" data-key="gross" data-accent="2">
+          <div class="upload__label">Gross Calls</div>
+          <div class="upload__zone" tabindex="0" role="button" aria-label="Upload Gross Calls file">
+            <input type="file" class="upload__input" accept=".xlsx,.xls,.csv">
+            <div class="upload__hint">Drop file or tap to browse</div>
+            <div class="upload__status" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="upload" data-key="meaningful" data-accent="3">
+          <div class="upload__label">Meaningful Calls</div>
+          <div class="upload__zone" tabindex="0" role="button" aria-label="Upload Meaningful Calls file">
+            <input type="file" class="upload__input" accept=".xlsx,.xls,.csv">
+            <div class="upload__hint">Drop file or tap to browse</div>
+            <div class="upload__status" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" id="step3" hidden>
+      <div class="step-label">Step 3</div>
+      <h2 class="card__title">Download</h2>
+      <p class="status-line" id="statusLine" aria-live="polite"></p>
+      <div class="actions">
+        <button class="btn btn--primary" id="downloadMasterBtn">Download Master Sheet (XLSX)</button>
+        <button class="btn btn--primary" id="downloadZipBtn">Download Adviser Files (ZIP)</button>
+      </div>
+    </section>
+
+    <div class="start-over-wrap">
+      <button class="btn btn--ghost" id="startOverBtn">Start over</button>
+    </div>
+  </div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ---------- Nickname data ----------
+  var NICKNAME_GROUPS = [
+    ['david','dave','davey'],
+    ['robert','rob','bob','bobby','robbie'],
+    ['william','will','bill','billy','liam'],
+    ['richard','rick','dick','ricky'],
+    ['michael','mike','mickey','mick'],
+    ['christopher','chris'],
+    ['daniel','dan','danny'],
+    ['james','jim','jimmy','jamie'],
+    ['thomas','tom','tommy'],
+    ['charles','charlie','chuck','chas'],
+    ['joseph','joe','joey'],
+    ['andrew','andy','drew'],
+    ['anthony','tony'],
+    ['matthew','matt'],
+    ['nicholas','nick','nicky'],
+    ['patrick','pat','paddy'],
+    ['samuel','sam','sammy'],
+    ['benjamin','ben','benny'],
+    ['alexander','alex','xander','sandy'],
+    ['jonathan','jon','jonny','johnny'],
+    ['edward','ed','eddie','ted','teddy'],
+    ['timothy','tim','timmy'],
+    ['gregory','greg'],
+    ['jeffrey','jeff'],
+    ['kenneth','ken','kenny'],
+    ['stephen','steve','steven'],
+    ['peter','pete'],
+    ['philip','phil'],
+    ['raymond','ray'],
+    ['ronald','ron','ronnie'],
+    ['russell','russ'],
+    ['nathaniel','nate','nathan'],
+    ['gerald','gerry','jerry'],
+    ['harold','harry'],
+    ['henry','hank','harry'],
+    ['zachary','zach','zack'],
+    ['jennifer','jen','jenny'],
+    ['katherine','kate','katie','kathy','kat','cathy','catherine'],
+    ['elizabeth','liz','beth','eliza','lizzie','betty','betsy'],
+    ['margaret','maggie','meg','peggy','marge'],
+    ['deborah','deb','debbie'],
+    ['susan','sue','susie'],
+    ['victoria','vicky','tori'],
+    ['jacqueline','jackie'],
+    ['rebecca','becky','becca'],
+    ['stephanie','steph'],
+    ['patricia','patty','tricia'],
+    ['barbara','barb','babs'],
+    ['cynthia','cindy'],
+    ['christine','christy','tina'],
+    ['angela','angie'],
+    ['amanda','mandy'],
+    ['samantha','sammie'],
+    ['alexandra','alexa','lexi'],
+    ['gabrielle','gabby'],
+    ['isabella','bella','izzy'],
+    ['natasha','tash'],
+    ['rachel','rae'],
+    ['sarah','sara']
+  ];
+  var NICKNAME_MAP = {};
+  NICKNAME_GROUPS.forEach(function (group, i) {
+    group.forEach(function (n) { NICKNAME_MAP[n] = i; });
+  });
+
+  // ---------- Name matching ----------
+  function normalizeWs(s) { return String(s).replace(/\s+/g, ' ').trim(); }
+
+  function parseName(raw) {
+    var parts = normalizeWs(raw).toLowerCase().split(' ');
+    if (parts.length === 1) return { first: parts[0], last: '' };
+    return { first: parts[0], last: parts[parts.length - 1] };
+  }
+
+  function namesMatch(a, b) {
+    if (!a || !b) return false;
+    var na = normalizeWs(a).toLowerCase();
+    var nb = normalizeWs(b).toLowerCase();
+    if (na === nb) return true;
+    var pa = parseName(na), pb = parseName(nb);
+    if (!pa.last || !pb.last || pa.last !== pb.last) return false;
+    var fa = pa.first.replace(/\.$/, '');
+    var fb = pb.first.replace(/\.$/, '');
+    if (fa === fb) return true;
+    if (fa.length === 1 || fb.length === 1) return fa[0] === fb[0];
+    var ga = NICKNAME_MAP[fa], gb = NICKNAME_MAP[fb];
+    return ga !== undefined && gb !== undefined && ga === gb;
+  }
+
+  // ---------- Union-Find ----------
+  function DSU() { this.parent = []; }
+  DSU.prototype.find = function (x) {
+    if (this.parent[x] === undefined) this.parent[x] = x;
+    if (this.parent[x] !== x) this.parent[x] = this.find(this.parent[x]);
+    return this.parent[x];
+  };
+  DSU.prototype.union = function (a, b) {
+    var ra = this.find(a), rb = this.find(b);
+    if (ra !== rb) this.parent[ra] = rb;
+  };
+
+  // ---------- Shared helpers ----------
+  function sanitizeFilename(name) {
+    return String(name).replace(/[\/\\:*?"<>|]/g, '').replace(/\s+/g, ' ').trim();
+  }
+  function downloadBlob(blob, filename) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 2000);
+  }
+  function numericValue(v) {
+    if (v === null || v === undefined || v === '') return -Infinity;
+    var n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
+    return isNaN(n) ? -Infinity : n;
+  }
+  function numericOrBlank(v) {
+    if (v === null || v === undefined || v === '') return '';
+    var n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
+    return isNaN(n) ? '' : n;
+  }
+
+  // ---------- XLSX building ----------
+  var GBP_FORMAT = '"£"#,##0.00';
+  var PERCENT_FORMAT = '0.00%';
+  var MAX_COL_WIDTH = 60;
+  var MIN_COL_WIDTH = 8;
+
+  function parseNumStrict(v) {
+    if (v === null || v === undefined || v === '') return null;
+    var n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
+    return isNaN(n) ? null : n;
+  }
+
+  function displayLen(value, formatCode) {
+    if (value === '' || value === null || value === undefined) return 0;
+    if (formatCode && typeof value === 'number') {
+      if (formatCode === GBP_FORMAT) return ('£' + value.toLocaleString('en-GB', { minimumFractionDigits: 2, maximumFractionDigits: 2 })).length;
+      if (formatCode === PERCENT_FORMAT) return ((value * 100).toFixed(2) + '%').length;
+    }
+    return String(value).length;
+  }
+
+  function computeColWidths(matrix, colFormatCodes) {
+    var numCols = matrix[0].length;
+    var widths = [];
+    for (var c = 0; c < numCols; c++) {
+      var maxLen = 0;
+      for (var r = 0; r < matrix.length; r++) {
+        var code = r > 0 ? colFormatCodes[c] : null;
+        var len = displayLen(matrix[r][c], code);
+        if (len > maxLen) maxLen = len;
+      }
+      widths.push({ wch: Math.min(Math.max(maxLen + 2, MIN_COL_WIDTH), MAX_COL_WIDTH) });
+    }
+    return widths;
+  }
+
+  // headers: array of column names. rows: array of row objects keyed by header.
+  // formatMap: Map from header name -> number format code, for columns stored as real numbers.
+  function buildWorkbookBytes(headers, rows, formatMap) {
+    var colFormatCodes = headers.map(function (h) { return formatMap.has(h) ? formatMap.get(h) : null; });
+
+    var matrix = [headers.slice()];
+    rows.forEach(function (row) {
+      var arr = headers.map(function (h) {
+        var v = row[h];
+        if (formatMap.has(h)) return numericOrBlank(v);
+        return v === null || v === undefined ? '' : v;
+      });
+      matrix.push(arr);
+    });
+
+    var ws = XLSX.utils.aoa_to_sheet(matrix);
+
+    var range = XLSX.utils.decode_range(ws['!ref']);
+    for (var R = range.s.r + 1; R <= range.e.r; R++) {
+      colFormatCodes.forEach(function (code, C) {
+        if (!code) return;
+        var addr = XLSX.utils.encode_cell({ r: R, c: C });
+        var cell = ws[addr];
+        if (cell && cell.t === 'n') cell.z = code;
+      });
+    }
+
+    ws['!cols'] = computeColWidths(matrix, colFormatCodes);
+
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Data');
+    var out = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+    return new Uint8Array(out);
+  }
+
+  // ---------- File parsing ----------
+  function parseFile(file) {
+    return file.arrayBuffer().then(function (buf) {
+      var wb = XLSX.read(buf, { type: 'array' });
+      var sheetName = wb.SheetNames[0];
+      var ws = wb.Sheets[sheetName];
+      var headerRow = (XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' })[0] || []);
+      var headers = headerRow.map(function (h) { return String(h).trim(); }).filter(function (h) { return h !== ''; });
+      var rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      var rowsFormatted = XLSX.utils.sheet_to_json(ws, { defval: '', raw: false });
+      return { headers: headers, rows: rows, rowsFormatted: rowsFormatted };
+    });
+  }
+
+  function detectAdviserColumn(headers) {
+    var col = headers.find(function (h) { return h.toLowerCase().indexOf('adviser') !== -1 && h.toLowerCase().indexOf('name') !== -1; });
+    if (!col) col = headers.find(function (h) { return h.toLowerCase().indexOf('adviser') !== -1; });
+    return col || null;
+  }
+
+  function detectDescriptionColumn(headers) {
+    var col = headers.find(function (h) { return h.trim().toLowerCase() === 'description'; });
+    if (!col) col = headers.find(function (h) { return h.toLowerCase().indexOf('description') !== -1; });
+    return col || null;
+  }
+
+  function findColumn(headers, name) {
+    var target = name.toLowerCase();
+    return headers.find(function (h) { return h.trim().toLowerCase() === target; }) || null;
+  }
+
+  function numOrZero(v) {
+    if (v === null || v === undefined || v === '') return 0;
+    var n = parseFloat(String(v).replace(/[^0-9.\-]/g, ''));
+    return isNaN(n) ? 0 : n;
+  }
+
+  // ---------- State ----------
+  var state = { files: { main: null, gross: null, meaningful: null }, merged: null };
+  var SHEET_LABELS = { main: 'Main Stats', gross: 'Gross Calls', meaningful: 'Meaningful Calls' };
+
+  // ---------- DOM refs ----------
+  var prefixInput = document.getElementById('prefixInput');
+  var step3 = document.getElementById('step3');
+  var statusLine = document.getElementById('statusLine');
+  var glyph = document.querySelector('.glyph');
+  var downloadMasterBtn = document.getElementById('downloadMasterBtn');
+  var downloadZipBtn = document.getElementById('downloadZipBtn');
+  var startOverBtn = document.getElementById('startOverBtn');
+
+  // ---------- Upload wiring ----------
+  document.querySelectorAll('.upload').forEach(function (uploadEl) {
+    var key = uploadEl.dataset.key;
+    var zone = uploadEl.querySelector('.upload__zone');
+    var input = uploadEl.querySelector('.upload__input');
+    var statusEl = uploadEl.querySelector('.upload__status');
+
+    zone.addEventListener('click', function () { input.click(); });
+    zone.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+    });
+    ['dragenter', 'dragover'].forEach(function (evt) {
+      zone.addEventListener(evt, function (e) { e.preventDefault(); zone.classList.add('is-dragover'); });
+    });
+    ['dragleave', 'drop'].forEach(function (evt) {
+      zone.addEventListener(evt, function (e) { e.preventDefault(); zone.classList.remove('is-dragover'); });
+    });
+    zone.addEventListener('drop', function (e) {
+      var f = e.dataTransfer.files[0];
+      if (f) handleFile(key, f, statusEl);
+    });
+    input.addEventListener('change', function () {
+      if (input.files[0]) handleFile(key, input.files[0], statusEl);
+    });
+  });
+
+  function handleFile(key, file, statusEl) {
+    statusEl.textContent = 'Reading…';
+    statusEl.className = 'upload__status';
+    parseFile(file).then(function (result) {
+      var headers = result.headers, rows = result.rows, rowsFormatted = result.rowsFormatted;
+      var isMain = key === 'main';
+      var matchCol = isMain ? detectAdviserColumn(headers) : detectDescriptionColumn(headers);
+      if (!matchCol) {
+        state.files[key] = null;
+        statusEl.textContent = isMain
+          ? 'No column containing "adviser" found — check the header row.'
+          : 'No column called "Description" found — check the header row.';
+        statusEl.className = 'upload__status is-error';
+        maybeRunMerge();
+        return;
+      }
+      state.files[key] = { fileName: file.name, headers: headers, rows: rows, rowsFormatted: rowsFormatted, adviserCol: matchCol };
+      statusEl.textContent = file.name + ' — ' + rows.length + (rows.length === 1 ? ' row' : ' rows') + ', matched on "' + matchCol + '"';
+      statusEl.className = 'upload__status is-ready';
+      maybeRunMerge();
+    }).catch(function () {
+      state.files[key] = null;
+      statusEl.textContent = "Couldn't read this file — make sure it's a valid Excel or CSV file.";
+      statusEl.className = 'upload__status is-error';
+      maybeRunMerge();
+    });
+  }
+
+  function maybeRunMerge() {
+    var f = state.files;
+    if (f.main && f.gross && f.meaningful) {
+      runMerge();
+      step3.hidden = false;
+    } else {
+      state.merged = null;
+      step3.hidden = true;
+    }
+  }
+
+  // ---------- Merge logic ----------
+  function runMerge() {
+    glyph.classList.add('is-processing');
+
+    var sheets = ['main', 'gross', 'meaningful'];
+    var entries = [];
+    sheets.forEach(function (sk) {
+      var data = state.files[sk];
+      data.rows.forEach(function (row, idx) {
+        var raw = String(row[data.adviserCol] != null ? row[data.adviserCol] : '').trim();
+        if (raw) entries.push({ sheetKey: sk, rawName: raw, rowIndex: idx });
+      });
+    });
+
+    var dsu = new DSU();
+    for (var i = 0; i < entries.length; i++) {
+      dsu.find(i);
+      for (var j = i + 1; j < entries.length; j++) {
+        if (entries[i].sheetKey === entries[j].sheetKey) continue; // one row per adviser per sheet -> same-sheet rows are always different people
+        if (namesMatch(entries[i].rawName, entries[j].rawName)) dsu.union(i, j);
+      }
+    }
+
+    var groups = {};
+    for (var k = 0; k < entries.length; k++) {
+      var root = dsu.find(k);
+      (groups[root] = groups[root] || []).push(entries[k]);
+    }
+
+    var clusters = Object.keys(groups).map(function (root, idx) {
+      var group = groups[root];
+      var bySheet = {};
+      group.forEach(function (e) { bySheet[e.sheetKey] = e; });
+      var canonicalName = (bySheet.main && bySheet.main.rawName) ||
+        (bySheet.gross && bySheet.gross.rawName) ||
+        (bySheet.meaningful && bySheet.meaningful.rawName);
+      return { id: idx, canonicalName: canonicalName, bySheet: bySheet };
+    });
+
+    // Only Main Stats contributes its full set of columns to the merge now.
+    var mainHeaders = state.files.main.headers.filter(function (h) {
+      if (h === state.files.main.adviserCol) return false;
+      if (h.trim().toLowerCase() === 'banked (business)') return false;
+      return true;
+    });
+    var finalCols = mainHeaders.map(function (h) { return { sheetKey: 'main', originalHeader: h, finalKey: h }; });
+
+    var headers = ['Adviser Name'].concat(finalCols.map(function (c) { return c.finalKey; }));
+
+    var rows = clusters.map(function (cluster) {
+      var row = { 'Adviser Name': cluster.canonicalName, __clusterId: cluster.id };
+      finalCols.forEach(function (c) {
+        var entry = cluster.bySheet.main;
+        row[c.finalKey] = entry ? (state.files.main.rows[entry.rowIndex][c.originalHeader] != null ? state.files.main.rows[entry.rowIndex][c.originalHeader] : '') : '';
+      });
+      return row;
+    });
+
+    var netBankedCol = finalCols.find(function (c) { return c.originalHeader.trim().toLowerCase() === 'net banked'; });
+    var submittedCol = finalCols.find(function (c) { return c.originalHeader.trim().toLowerCase() === 'submitted value'; });
+    var grossConvertedCol = finalCols.find(function (c) { return c.originalHeader.trim().toLowerCase() === 'gross converted'; });
+    var netConvertedCol = finalCols.find(function (c) { return c.originalHeader.trim().toLowerCase() === 'net converted'; });
+    var canComputeCloseAtFirstCall = !!(grossConvertedCol && netConvertedCol);
+
+    if (canComputeCloseAtFirstCall) {
+      rows.forEach(function (row) {
+        var g = parseNumStrict(row[grossConvertedCol.finalKey]);
+        var nn = parseNumStrict(row[netConvertedCol.finalKey]);
+        row['Close At First Call'] = (g !== null && nn !== null && g !== 0) ? (g - nn) / g : '';
+      });
+      var insertAt = headers.indexOf(netConvertedCol.finalKey) + 1;
+      headers.splice(insertAt, 0, 'Close At First Call');
+    }
+
+    // Gross Calls / Meaningful Calls: derived totals only (Out + In), matched via each sheet's Description column.
+    var grossOutCol = findColumn(state.files.gross.headers, 'Out');
+    var grossInCol = findColumn(state.files.gross.headers, 'In');
+    var grossTotTlkCol = findColumn(state.files.gross.headers, 'Tot Tlk');
+    var meaningfulOutCol = findColumn(state.files.meaningful.headers, 'Out');
+    var meaningfulInCol = findColumn(state.files.meaningful.headers, 'In');
+
+    var canComputeGrossCalls = !!(grossOutCol && grossInCol);
+    var canComputeMeaningfulCalls = !!(meaningfulOutCol && meaningfulInCol);
+    var canAddTalkTime = !!grossTotTlkCol;
+
+    rows.forEach(function (row) {
+      var grossEntry = row.__clusterId !== undefined ? clusters[row.__clusterId].bySheet.gross : null;
+      var meaningfulEntry = row.__clusterId !== undefined ? clusters[row.__clusterId].bySheet.meaningful : null;
+
+      if (canComputeGrossCalls) {
+        row['Gross Calls'] = grossEntry
+          ? numOrZero(state.files.gross.rows[grossEntry.rowIndex][grossOutCol]) + numOrZero(state.files.gross.rows[grossEntry.rowIndex][grossInCol])
+          : '';
+      }
+      if (canComputeMeaningfulCalls) {
+        row['Meaningful Calls'] = meaningfulEntry
+          ? numOrZero(state.files.meaningful.rows[meaningfulEntry.rowIndex][meaningfulOutCol]) + numOrZero(state.files.meaningful.rows[meaningfulEntry.rowIndex][meaningfulInCol])
+          : '';
+      }
+      if (canAddTalkTime) {
+        row['Total Talk Time'] = grossEntry
+          ? (state.files.gross.rowsFormatted[grossEntry.rowIndex][grossTotTlkCol] != null ? state.files.gross.rowsFormatted[grossEntry.rowIndex][grossTotTlkCol] : '')
+          : '';
+      }
+    });
+
+    if (canComputeGrossCalls) headers.push('Gross Calls');
+    if (canComputeMeaningfulCalls) headers.push('Meaningful Calls');
+    if (canAddTalkTime) headers.push('Total Talk Time');
+
+    var formatMap = new Map();
+    if (netBankedCol) formatMap.set(netBankedCol.finalKey, GBP_FORMAT);
+    if (submittedCol) formatMap.set(submittedCol.finalKey, GBP_FORMAT);
+    if (canComputeCloseAtFirstCall) formatMap.set('Close At First Call', PERCENT_FORMAT);
+
+    var sortWarning = !netBankedCol;
+    var sortedRows = netBankedCol
+      ? rows.slice().sort(function (a, b) { return numericValue(b[netBankedCol.finalKey]) - numericValue(a[netBankedCol.finalKey]); })
+      : rows;
+
+    state.merged = { headers: headers, rowsSorted: sortedRows, clusters: clusters, formatMap: formatMap };
+
+    setTimeout(function () { glyph.classList.remove('is-processing'); }, 400);
+
+    var warnings = [];
+    if (sortWarning) warnings.push('no "Net Banked" column found in Main Stats, so rows kept their original order');
+    if (!canComputeCloseAtFirstCall) warnings.push('"Close At First Call" couldn\'t be added — missing a "Gross Converted" or "Net Converted" column');
+    if (!canComputeGrossCalls) warnings.push('"Gross Calls" couldn\'t be added — missing an "Out" or "In" column in the Gross Calls file');
+    if (!canComputeMeaningfulCalls) warnings.push('"Meaningful Calls" couldn\'t be added — missing an "Out" or "In" column in the Meaningful Calls file');
+    if (!canAddTalkTime) warnings.push('"Total Talk Time" couldn\'t be added — missing a "Tot Tlk" column in the Gross Calls file');
+
+    var n = clusters.length;
+    var base = n + (n === 1 ? ' adviser' : ' advisers') + ' matched';
+    statusLine.textContent = warnings.length ? (base + ' — ' + warnings.join('; ') + '.') : (base + ' — sorted by Net Banked, highest first.');
+    statusLine.className = warnings.length ? 'status-line is-warning' : 'status-line';
+  }
+
+  // ---------- Downloads ----------
+  function currentPrefix() {
+    return sanitizeFilename(prefixInput.value.trim()) || 'Output';
+  }
+
+  downloadMasterBtn.addEventListener('click', function () {
+    if (!state.merged) return;
+    var bytes = buildWorkbookBytes(state.merged.headers, state.merged.rowsSorted, state.merged.formatMap);
+    var blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    downloadBlob(blob, currentPrefix() + ' Master Sheet.xlsx');
+  });
+
+  downloadZipBtn.addEventListener('click', function () {
+    if (!state.merged) return;
+    downloadZipBtn.disabled = true;
+    var originalText = downloadZipBtn.textContent;
+    downloadZipBtn.textContent = 'Building files…';
+
+    var zip = new JSZip();
+    var prefix = currentPrefix();
+    state.merged.clusters.forEach(function (cluster) {
+      var rows = state.merged.rowsSorted.map(function (r) {
+        if (r.__clusterId === cluster.id) return r;
+        var copy = Object.assign({}, r);
+        copy['Adviser Name'] = '';
+        return copy;
+      });
+      var bytes = buildWorkbookBytes(state.merged.headers, rows, state.merged.formatMap);
+      var fname = sanitizeFilename(prefix + ' ' + cluster.canonicalName + '.xlsx');
+      zip.file(fname, bytes);
+    });
+
+    zip.generateAsync({ type: 'blob' }).then(function (blob) {
+      downloadBlob(blob, prefix + ' Adviser Sheets.zip');
+    }).finally(function () {
+      downloadZipBtn.disabled = false;
+      downloadZipBtn.textContent = originalText;
+    });
+  });
+
+  startOverBtn.addEventListener('click', function () {
+    state.files = { main: null, gross: null, meaningful: null };
+    state.merged = null;
+    prefixInput.value = '';
+    document.querySelectorAll('.upload__input').forEach(function (i) { i.value = ''; });
+    document.querySelectorAll('.upload__status').forEach(function (s) { s.textContent = ''; s.className = 'upload__status'; });
+    step3.hidden = true;
+    statusLine.textContent = '';
+  });
+
+})();
+</script>
+</body>
+</html>
