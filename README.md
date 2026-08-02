@@ -68,6 +68,12 @@ Shown in the status line without stopping the process, when:
 - No `Net Banked` column is found in Main Stats (rows aren't sorted).
 - `Close At First Call`, `Gross Calls`, `Meaningful Calls`, or `Total Talk Time` can't be computed because a required source column is missing.
 - An uploaded file has no recognisable adviser/`Description` column — that file is rejected until it's fixed.
+
+- ## Limitations
+
+- Nickname matching is heuristic, not exhaustive.
+- Column detection relies on header text (case-insensitive); unexpected header wording won't be recognised.
+- Built for one row per adviser per sheet — not designed for multiple rows per adviser within the same sheet.
 -----------------------------------------------------------------------------------------------------------------------------------------------
 - # Report Builder
 
@@ -109,9 +115,3 @@ Reports can be exported as CSV or Excel (.xlsx).
 ## Privacy
 
 Everything runs locally in your browser — files are never uploaded to a server. Saved presets are stored in your browser's local storage, so they're private to your device and browser, not shared or synced elsewhere.
-
-## Limitations
-
-- Nickname matching is heuristic, not exhaustive.
-- Column detection relies on header text (case-insensitive); unexpected header wording won't be recognised.
-- Built for one row per adviser per sheet — not designed for multiple rows per adviser within the same sheet.
