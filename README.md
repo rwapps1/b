@@ -115,3 +115,54 @@ Reports can be exported as CSV or Excel (.xlsx).
 ## Privacy
 
 Everything runs locally in your browser — files are never uploaded to a server. Saved presets are stored in your browser's local storage, so they're private to your device and browser, not shared or synced elsewhere.
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# Adviser dashboard
+
+A single-page dashboard for tracking adviser submissions alongside net banked income, built to encourage focus on submissions as the leading indicator that drives future banked income.
+
+Live entirely as one HTML file — no build step, no backend, no server-side storage. Data is parsed and held in the browser only; nothing is ever uploaded anywhere.
+
+## Features
+
+- Upload a `.csv` or `.xlsx` broker summary sheet directly in the browser
+- Flexible column matching — works even if headers vary slightly month to month, as long as they contain the expected keywords (see below)
+- Summary metric cards: total submissions, total submitted value, total net banked, adviser count
+- A toggle between two views:
+  - **Submissions** — ranks the top 12 advisers by submissions, table sorted by submitted value (highest first)
+  - **Submissions & Net Banked** — ranks the top 12 advisers by net banked, table sorted by net banked (highest first)
+- Sortable table — click any column header to re-sort
+- Download the table as a JPEG image, ready to paste into an email
+
+## Expected columns
+
+The uploaded sheet should contain columns whose headers include (case-insensitive, exact naming can vary):
+
+| Required | Keyword match |
+|---|---|
+| Adviser name | contains "adviser" |
+| Submissions | contains "submission" (not "value") |
+| Net banked | contains "net" and "banked" |
+
+| Optional | Keyword match |
+|---|---|
+| Submitted value | contains "submitted" and "value" |
+| Handovers | contains "handover" |
+
+If the required columns can't be found, the page will show an error rather than guessing.
+
+## Deploying
+
+1. Create a new GitHub repository (public or private).
+2. Add `index.html` to the root of the repository.
+3. In the repo's **Settings → Pages**, set the source to your main branch, root folder.
+4. The dashboard will be live at `https://<your-username>.github.io/<repo-name>/` within a minute or two.
+
+No other setup is required — all libraries (Chart.js, PapaParse, SheetJS, html2canvas) are loaded from CDN at runtime.
+
+## Privacy
+
+All parsing and calculation happens client-side, in the visitor's own browser. The uploaded file is never sent to a server, and nothing is persisted between visits — refreshing the page clears the data.
+
+## Tech
+
+Plain HTML, CSS and JavaScript. No framework, no build tooling. Charting via Chart.js, spreadsheet parsing via PapaParse (CSV) and SheetJS (XLSX), image export via html2canvas.
