@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Adviser dashboard</title>
+<style>
+  :root{
+    --navy:#373945;
+    --blue:#155EEF;
+    --blue-dark:#1147BE;
+    --blue-light:#F6F9FF;
+    --page-bg:#FAFAFB;
+    --text-secondary:#85878E;
+    --border:#E7ECFB;
+    --white:#FFFFFF;
+    --green:#22C55E;
+    --radius:12px;
+    --radius-pill:999px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--page-bg);
+    color:var(--navy);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  .page{max-width:920px;margin:0 auto;padding:40px 24px 64px;}
+  .page-header h1{font-size:28px;font-weight:700;margin:0 0 4px;}
+  .page-header .subtitle{color:var(--text-secondary);margin:0 0 32px;font-size:15px;}
+
+  .upload-card{
+    background:var(--white);
+    border:2px dashed var(--blue-light);
+    border-radius:16px;
+    padding:48px 24px;
+    text-align:center;
+  }
+  .upload-title{font-size:16px;font-weight:600;margin:12px 0 4px;}
+  .upload-hint{color:var(--text-secondary);font-size:13px;margin:0 0 20px;}
+  .upload-error{color:#B42318;font-size:13px;margin-top:16px;}
+
+  .btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    border-radius:var(--radius-pill);
+    padding:10px 22px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    border:1px solid transparent;
+    font-family:inherit;
+  }
+  .btn-primary{background:var(--blue);color:#fff;}
+  .btn-primary:hover{background:var(--blue-dark);}
+  .btn-secondary{background:#fff;color:var(--navy);border-color:var(--border);}
+  .btn-secondary:hover{background:var(--blue-light);}
+
+  #dashboard-section{margin-top:8px;}
+  .toolbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:20px;
+    flex-wrap:wrap;
+    gap:12px;
+  }
+  .file-name{font-size:13px;color:var(--text-secondary);}
+  .toolbar-actions{display:flex;gap:10px;}
+
+  #capture-area{background:var(--page-bg);padding:4px;}
+
+  .metrics-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+    gap:12px;
+    margin-bottom:16px;
+  }
+  .metric-card{
+    background:var(--blue-light);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px 18px;
+  }
+  .metric-label{font-size:13px;color:var(--navy);opacity:.7;margin:0 0 6px;}
+  .metric-value{font-size:24px;font-weight:700;margin:0;color:var(--navy);}
+
+  .chart-card, .table-card{
+    background:var(--white);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:20px;
+    margin-bottom:16px;
+  }
+  .toggle-row{display:flex;gap:8px;margin-bottom:16px;}
+  .toggle{
+    border-radius:var(--radius-pill);
+    padding:8px 18px;
+    font-size:13px;
+    font-weight:600;
+    border:1px solid var(--border);
+    background:#fff;
+    color:var(--navy);
+    cursor:pointer;
+    font-family:inherit;
+  }
+  .toggle.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+  .chart-wrapper{position:relative;width:100%;height:420px;}
+
+  table{width:auto;border-collapse:collapse;font-size:13px;}
+  th,td{text-align:left;padding:10px 16px;border-bottom:1px solid var(--border);white-space:nowrap;}
+  th:first-child, td:first-child{padding-left:0;}
+  th:last-child, td:last-child{padding-right:0;}
+  th{color:var(--text-secondary);font-weight:600;cursor:pointer;user-select:none;}
+  th:hover{color:var(--navy);}
+  td.num, th.num{text-align:right;}
+  tbody tr:last-child td{border-bottom:none;}
+
+  .page-footer{margin-top:32px;font-size:12px;color:var(--text-secondary);text-align:center;}
+
+  @media (max-width:600px){
+    table{font-size:12px;}
+    .chart-wrapper{height:520px;}
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="page-header">
+    <h1>Adviser dashboard</h1>
+    <p class="subtitle">Submissions and banked performance, side by side.</p>
+  </header>
+
+  <section id="upload-section" class="upload-card">
+    <p class="upload-title">Upload last month's broker summary</p>
+    <p class="upload-hint">.csv or .xlsx — the file is read in your browser and never uploaded anywhere.</p>
+    <label class="btn btn-primary" for="file-input">Choose file</label>
+    <input id="file-input" type="file" accept=".csv,.xlsx,.xls" hidden>
+    <p id="upload-error" class="upload-error" hidden></p>
+  </section>
+
+  <section id="dashboard-section" hidden>
+    <div class="toolbar">
+      <span id="file-name" class="file-name"></span>
+      <div class="toolbar-actions">
+        <button id="download-btn" class="btn btn-primary">Download as image</button>
+        <button id="reset-btn" class="btn btn-secondary">Upload new sheet</button>
+      </div>
+    </div>
+
+    <div id="capture-area">
+      <div class="metrics-grid" id="metrics-grid"></div>
+
+      <div class="chart-card">
+        <div class="toggle-row">
+          <button id="btn-sub" class="toggle active">Submissions</button>
+          <button id="btn-bank" class="toggle">Submissions &amp; Net Banked</button>
+        </div>
+        <div class="chart-wrapper">
+          <canvas id="rank-chart"></canvas>
+        </div>
+      </div>
+
+      <div class="table-card" id="table-card">
+        <table id="data-table">
+          <thead>
+            <tr>
+              <th data-key="name">Adviser</th>
+              <th data-key="submissions" class="num">Submissions</th>
+              <th data-key="submittedValue" class="num">Submitted value</th>
+              <th id="dynamic-th" data-key="handovers" class="num">Handovers</th>
+            </tr>
+          </thead>
+          <tbody id="table-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <footer class="page-footer">Data is processed locally in your browser and never uploaded anywhere.</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var rows = [];
+  var sortKey = "submittedValue";
+  var sortDir = "desc";
+  var chart = null;
+  var chartMetric = "submissions";
+
+  var fileInput = document.getElementById("file-input");
+  var uploadError = document.getElementById("upload-error");
+  var uploadSection = document.getElementById("upload-section");
+  var dashboardSection = document.getElementById("dashboard-section");
+  var fileNameEl = document.getElementById("file-name");
+  var metricsGrid = document.getElementById("metrics-grid");
+  var tableBody = document.getElementById("table-body");
+  var downloadBtn = document.getElementById("download-btn");
+  var resetBtn = document.getElementById("reset-btn");
+  var btnSub = document.getElementById("btn-sub");
+  var btnBank = document.getElementById("btn-bank");
+
+  fileInput.addEventListener("change", function(e){
+    var file = e.target.files[0];
+    if(!file) return;
+    uploadError.hidden = true;
+    var ext = file.name.split(".").pop().toLowerCase();
+    if(ext === "csv"){
+      Papa.parse(file, {
+        header:true,
+        dynamicTyping:true,
+        skipEmptyLines:true,
+        complete:function(res){ handleParsed(res.data, file.name); },
+        error:function(err){ showError("Could not read that CSV file."); }
+      });
+    } else if(ext === "xlsx" || ext === "xls"){
+      var reader = new FileReader();
+      reader.onload = function(evt){
+        try{
+          var wb = XLSX.read(new Uint8Array(evt.target.result), {type:"array"});
+          var sheet = wb.Sheets[wb.SheetNames[0]];
+          var data = XLSX.utils.sheet_to_json(sheet, {defval:null});
+          handleParsed(data, file.name);
+        }catch(err){ showError("Could not read that spreadsheet."); }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      showError("Please upload a .csv or .xlsx file.");
+    }
+  });
+
+  function showError(msg){
+    uploadError.textContent = msg;
+    uploadError.hidden = false;
+  }
+
+  function findCol(headers, include, exclude){
+    exclude = exclude || [];
+    for(var i=0;i<headers.length;i++){
+      var h = headers[i].toLowerCase();
+      var hasAll = include.every(function(k){ return h.indexOf(k) !== -1; });
+      var hasNone = exclude.every(function(k){ return h.indexOf(k) === -1; });
+      if(hasAll && hasNone) return headers[i];
+    }
+    return null;
+  }
+
+  function num(v){
+    if(typeof v === "number") return v;
+    if(v === null || v === undefined || v === "") return 0;
+    var n = parseFloat(String(v).replace(/[£,]/g,""));
+    return isNaN(n) ? 0 : n;
+  }
+
+  function handleParsed(data, fileName){
+    if(!data || !data.length){ showError("That file doesn't have any rows in it."); return; }
+    var headers = Object.keys(data[0]);
+    var adviserCol = findCol(headers, ["adviser"]);
+    var submissionsCol = findCol(headers, ["submission"], ["value"]);
+    var netBankedCol = findCol(headers, ["net","banked"]);
+    if(!adviserCol || !submissionsCol || !netBankedCol){
+      showError("Couldn't find adviser, submissions and net banked columns in that file.");
+      return;
+    }
+    var submittedValueCol = findCol(headers, ["submitted","value"]);
+    var handoversCol = findCol(headers, ["handover"]);
+
+    rows = data
+      .filter(function(r){ return r[adviserCol]; })
+      .map(function(r){
+        return {
+          name: String(r[adviserCol]).trim(),
+          submissions: num(r[submissionsCol]),
+          submittedValue: submittedValueCol ? num(r[submittedValueCol]) : null,
+          handovers: handoversCol ? num(r[handoversCol]) : null,
+          netBanked: num(r[netBankedCol])
+        };
+      });
+
+    if(!rows.length){ showError("No adviser rows found in that file."); return; }
+
+    fileNameEl.textContent = fileName;
+    uploadSection.hidden = true;
+    dashboardSection.hidden = false;
+    renderMetrics();
+    renderChart();
+    updateDynamicHeader();
+    renderTable();
+  }
+
+  function gbp(n){
+    if(n === null) return "—";
+    return "£" + Math.round(n).toLocaleString("en-GB");
+  }
+  function count(n){
+    if(n === null) return "—";
+    return Math.round(n).toLocaleString("en-GB");
+  }
+
+  function renderMetrics(){
+    var totalSubmissions = rows.reduce(function(s,r){ return s + r.submissions; }, 0);
+    var totalSubmittedValue = rows.reduce(function(s,r){ return s + (r.submittedValue || 0); }, 0);
+    var totalNetBanked = rows.reduce(function(s,r){ return s + r.netBanked; }, 0);
+    var cards = [
+      {label:"Submissions", value: count(totalSubmissions)},
+      {label:"Submitted value", value: gbp(totalSubmittedValue)},
+      {label:"Net banked", value: gbp(totalNetBanked)},
+      {label:"Advisers", value: count(rows.length)}
+    ];
+    metricsGrid.innerHTML = cards.map(function(c){
+      return '<div class="metric-card"><p class="metric-label">'+c.label+'</p><p class="metric-value">'+c.value+'</p></div>';
+    }).join("");
+  }
+
+  function buildChartConfig(metric){
+    var top = rows.slice().sort(function(a,b){ return b[metric] - a[metric]; }).slice(0,12);
+    return {
+      type:"bar",
+      data:{
+        labels: top.map(function(r){ return r.name; }),
+        datasets:[{
+          label: metric === "submissions" ? "Submissions" : "Net banked",
+          data: top.map(function(r){ return r[metric]; }),
+          backgroundColor:"#155EEF",
+          borderRadius:4,
+          maxBarThickness:24
+        }]
+      },
+      options:{
+        indexAxis:"y",
+        responsive:true,
+        maintainAspectRatio:false,
+        plugins:{ legend:{ display:false } },
+        scales:{
+          x:{
+            grid:{ color:"#E7ECFB" },
+            ticks:{ callback:function(v){ return metric === "netBanked" ? "£"+v.toLocaleString("en-GB") : v; } }
+          },
+          y:{ grid:{ display:false } }
+        }
+      }
+    };
+  }
+
+  function renderChart(){
+    if(chart) chart.destroy();
+    chart = new Chart(document.getElementById("rank-chart"), buildChartConfig(chartMetric));
+  }
+
+  var dynamicTh = document.getElementById("dynamic-th");
+
+  function updateDynamicHeader(){
+    var key = chartMetric === "submissions" ? "handovers" : "netBanked";
+    dynamicTh.textContent = key === "handovers" ? "Handovers" : "Net banked";
+    dynamicTh.setAttribute("data-key", key);
+  }
+
+  function setToggle(metric){
+    chartMetric = metric;
+    if(metric === "submissions"){
+      btnSub.classList.add("active");
+      btnBank.classList.remove("active");
+    } else {
+      btnBank.classList.add("active");
+      btnSub.classList.remove("active");
+    }
+    sortKey = metric === "submissions" ? "submittedValue" : "netBanked";
+    sortDir = "desc";
+    renderChart();
+    updateDynamicHeader();
+    renderTable();
+  }
+
+  btnSub.addEventListener("click", function(){ setToggle("submissions"); });
+  btnBank.addEventListener("click", function(){ setToggle("netBanked"); });
+
+  function renderTable(){
+    var dynamicKey = chartMetric === "submissions" ? "handovers" : "netBanked";
+    var sorted = rows.slice().sort(function(a,b){
+      var av = a[sortKey], bv = b[sortKey];
+      if(typeof av === "string") return sortDir === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+      av = av || 0; bv = bv || 0;
+      return sortDir === "asc" ? av - bv : bv - av;
+    });
+    tableBody.innerHTML = sorted.map(function(r){
+      var dynamicVal = dynamicKey === "netBanked" ? gbp(r.netBanked) : count(r.handovers);
+      return "<tr>"+
+        "<td>"+r.name+"</td>"+
+        '<td class="num">'+count(r.submissions)+"</td>"+
+        '<td class="num">'+gbp(r.submittedValue)+"</td>"+
+        '<td class="num">'+dynamicVal+"</td>"+
+        "</tr>";
+    }).join("");
+  }
+
+  document.querySelectorAll("#data-table th[data-key]").forEach(function(th){
+    th.addEventListener("click", function(){
+      var key = th.getAttribute("data-key");
+      if(sortKey === key){ sortDir = sortDir === "asc" ? "desc" : "asc"; }
+      else { sortKey = key; sortDir = "desc"; }
+      renderTable();
+    });
+  });
+
+  downloadBtn.addEventListener("click", function(){
+    downloadBtn.disabled = true;
+    downloadBtn.textContent = "Preparing image…";
+    html2canvas(document.getElementById("table-card"), {backgroundColor:"#FFFFFF", scale:2}).then(function(canvas){
+      var link = document.createElement("a");
+      link.download = "adviser-submissions-table.jpg";
+      link.href = canvas.toDataURL("image/jpeg", 0.92);
+      link.click();
+      downloadBtn.disabled = false;
+      downloadBtn.textContent = "Download as image";
+    }).catch(function(){
+      downloadBtn.disabled = false;
+      downloadBtn.textContent = "Download as image";
+    });
+  });
+
+  resetBtn.addEventListener("click", function(){
+    rows = [];
+    fileInput.value = "";
+    dashboardSection.hidden = true;
+    uploadSection.hidden = false;
+  });
+
+})();
+</script>
+</body>
+</html>
